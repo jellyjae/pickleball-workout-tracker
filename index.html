@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏓 Pickleball Power Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f1409; font-family: 'DM Sans', sans-serif; }
+    input, textarea, button { font-family: 'DM Sans', sans-serif; }
+    textarea { resize: vertical; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #1a2208; }
+    ::-webkit-scrollbar-thumb { background: #3a4a20; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const T = {
+      bg: "#0f1409", card: "#181f0a", mid: "#222d0e", border: "#2e3d14",
+      green: "#c2d94e", greenDim: "#7a9020", accent: "#edf2c4", muted: "#7a8f50",
+      done: "#1a2808", doneBorder: "#c2d94e", orange: "#e8a030", red: "#e85030",
+    };
+
+    const WEEKS = Array.from({ length: 8 }, (_, i) => `W${i + 1}`);
+
+    const WARMUP_ITEMS = [
+      "Hip circles — 10 each direction",
+      "Standing glute kickbacks — 10 each side",
+      "Side steps with heel tap — 15 each way",
+      "Arm cross swings (chest openers) — 15 reps",
+      "Mini squat pulses — 20 reps",
+    ];
+
+    const MOBILITY_MENU = {
+      ankle: [
+        "Wall ankle rocks — knee drives forward, heel stays flat (10 each)",
+        "Ankle circles — 10 each direction",
+        "Heel drops off a step — slow, 10 reps",
+      ],
+      hip: [
+        "90/90 hip stretch — 45 sec each side",
+        "Hip flexor lunge stretch with reach — 30 sec each",
+        "Pigeon pose or figure-4 on bench — 45 sec each",
+        "Hip CARs — slow full circle, 5 each direction",
+      ],
+    };
+
+    const DAY1_PRIMARY = [
+      { id: "d1_ht",  name: "Hip Thrust",            sets: "4 × 10",           hasWeight: true,  note: "Go heavy — primary glute builder. Drive through heels, squeeze at top.", tag: "glutes" },
+      { id: "d1_bss", name: "Bulgarian Split Squat",  sets: "3 × 8 each leg",   hasWeight: true,  note: "3 sec down, pause at bottom. Rear foot elevated.", tag: "glutes" },
+      { id: "d1_lp",  name: "Leg Press",              sets: "3 × 12",           hasWeight: true,  note: "Feet shoulder-width, push through heels. Full range.", tag: "legs" },
+      { id: "d1_sj",  name: "Squat Jumps OR Skaters", sets: "3 × 8",            hasWeight: false, note: "Choose based on how knees feel. Skaters = lateral, great for court coverage.", tag: "power" },
+      { id: "d1_lbw", name: "Lateral Band Walks",     sets: "3 × 15 each way",  hasWeight: false, note: "Mini band above knees. Stay low throughout.", tag: "glutes" },
+      { id: "d1_plank",name: "Plank",                 sets: "3 × max hold",     hasWeight: false, note: "Log your time. Full body tight — glutes, core, quads all on.", tag: "core", hasTime: true },
+      { id: "d1_sp",  name: "Side Plank",             sets: "2 × max each side",hasWeight: false, note: "Log your time. Don't let hips sag.", tag: "core", hasTime: true },
+      { id: "d1_pp",  name: "Pallof Press",           sets: "3 × 12 each side", hasWeight: false, note: "Anti-rotation = shot control. Slow and controlled.", tag: "core" },
+    ];
+
+    const DAY1_SWAPS = [
+      { name: "Sumo Squat",         note: "Swap for Hip Thrust. Wide stance, toes out, drives glutes + inner thigh." },
+      { name: "Goblet Squat",       note: "Swap for Leg Press. Dumbbell at chest, more core demand." },
+      { name: "Single Leg Deadlift",note: "Swap for Bulgarian Split Squat. More hamstring emphasis, same unilateral." },
+    ];
+
+    const DAY2_PRIMARY = [
+      { id: "d2_lp",  name: "Lat Pulldown",           sets: "3 × 12",           hasWeight: true,  note: "Builds backhand pulling strength. Full stretch at top.", tag: "upper" },
+      { id: "d2_cp",  name: "Chest Press Machine",     sets: "3 × 12",           hasWeight: true,  note: "Forehand drive power. Control the return.", tag: "upper" },
+      { id: "d2_neg", name: "Negative Push-ups",       sets: "3 × 5",            hasWeight: false, note: "Full push-up position → lower 5 sec → reset from knees. Your push-up breakthrough.", tag: "upper" },
+      { id: "d2_row", name: "Dumbbell Row",            sets: "3 × 10 each arm",  hasWeight: true,  note: "Unilateral — corrects left/right imbalances.", tag: "upper" },
+      { id: "d2_rp",  name: "Dumbbell Rotational Press",sets:"3 × 10 each side", hasWeight: true,  note: "Stand, press and rotate. Drives and smash power.", tag: "upper" },
+      { id: "d2_er",  name: "Band External Rotation",  sets: "3 × 15 each",      hasWeight: false, note: "Elbow tucked at 90°, rotate forearm outward. Shoulder injury prevention.", tag: "upper" },
+      { id: "d2_sg",  name: "Sponge Grip Squeeze",     sets: "3 × 15",           hasWeight: false, note: "🏓 Coach drill. Semi-soft sponge in palm, grip tight then release in a controlled manner. Relax the wrist throughout — trains grip sensitivity for dinks and drives.", tag: "grip" },
+      { id: "d2_wc",  name: "Wrist Curl (dumbbell)",   sets: "3 × 12",           hasWeight: true,  note: "🏓 Coach drill. Forearm resting on thigh or bench, curl wrist upward in a controlled direction. Start 2.5kg, progress to 5kg. Strengthens the wrist flick for smashes and drives.", tag: "grip" },
+      { id: "d2_ag",  name: "Agility Ladder Drills",   sets: "3 rounds × 30 sec",hasWeight: false, note: "In-in-out-out / T-drill / split step + shuffle. Sharp and intentional.", tag: "agility" },
+      { id: "d2_pst", name: "Plank Shoulder Taps",     sets: "3 × 20 total",     hasWeight: false, note: "Mid-game core endurance. Hips stay square.", tag: "core" },
+    ];
+
+    const PISTOL_STAGES = [
+      { id: "ps1", label: "Stage 1", name: "Box Squat (two legs)",          note: "Sit back to bench with control, stand tall." },
+      { id: "ps2", label: "Stage 2", name: "Single Leg to Bench (current)", note: "You're here. Work on lowering height using stacked plates." },
+      { id: "ps3", label: "Stage 3", name: "Plate Stack — reduce height",   note: "Stack bumper plates, remove one plate every 2–3 weeks." },
+      { id: "ps4", label: "Stage 4", name: "TRX / Door frame assisted",     note: "Light hold for balance only — not to pull up." },
+      { id: "ps5", label: "Stage 5", name: "Heel-elevated pistol",          note: "Heel on plate/wedge. Compensates ankle mobility, builds depth." },
+      { id: "ps6", label: "Stage 6", name: "Full pistol squat 🎯",          note: "Goal achieved!" },
+    ];
+
+    const PUSHUP_STAGES = [
+      { id: "pu1", label: "Stage 1", name: "Wall push-up",              note: "Hands on wall, body straight." },
+      { id: "pu2", label: "Stage 2", name: "Incline push-up (current)", note: "You're here. Add tempo: 3 sec down, 1 sec pause, push." },
+      { id: "pu3", label: "Stage 3", name: "Negative push-ups",         note: "Full position → 5 sec lower → reset from knees. Your breakthrough." },
+      { id: "pu4", label: "Stage 4", name: "Knee push-up",              note: "Full range, knees down. Glutes and core on." },
+      { id: "pu5", label: "Stage 5", name: "Full push-up 🎯",           note: "Goal achieved!" },
+    ];
+
+    const FOAM_ROLLER = [
+      { id: "fr1", name: "Hamstrings",          note: "Slow roll, pause 20–30 sec on tight spots. Your priority." },
+      { id: "fr2", name: "IT Band (outer thigh)",note: "Side-lying, roll outer thigh. Pause where tight." },
+      { id: "fr3", name: "Glutes / Piriformis", note: "Sit on roller, cross ankle over knee, lean into tight side." },
+      { id: "fr4", name: "Calves",              note: "Helps ankle mobility too. Cross one leg on top for pressure." },
+      { id: "fr5", name: "Upper back",          note: "Arms crossed over chest. Slow release, breathe into it." },
+    ];
+
+    const SMALL_BALL = [
+      { id: "sb1", name: "Hamstring trigger point", note: "Sit on chair, ball under back of thigh. Hold 20–30 sec, flex/extend knee slowly." },
+      { id: "sb2", name: "Glute / piriformis",      note: "Sit on ball, cross ankle over knee, lean into tight side." },
+      { id: "sb3", name: "Calf release",            note: "Ball under calf, cross other leg on top for pressure. Roll slowly." },
+      { id: "sb4", name: "Foot / plantar fascia",   note: "Stand and roll ball under foot. Good for all the court movement." },
+    ];
+
+    const MOBILITY_FLOW = [
+      { id: "mf1", name: "90/90 hip stretch",         note: "60 sec each side. Breathe into the hip." },
+      { id: "mf2", name: "Standing hamstring hinge",   note: "Slow, breathe into the stretch. Your hamstrings need patience." },
+      { id: "mf3", name: "Pigeon pose",               note: "60 sec each side. Or figure-4 on bench if floor is awkward." },
+      { id: "mf4", name: "Wall ankle rocks",           note: "10 each side. Knee tracks over toes, heel stays down." },
+      { id: "mf5", name: "Cat-cow",                   note: "10 reps. Slow and deliberate." },
+    ];
+
+    const POOL_OPTIONS = [
+      { id: "p1", name: "Lap swimming (moderate)",        note: "20–30 min. Joint-friendly cardio, great for perimenopause inflammation." },
+      { id: "p2", name: "Water walking / lateral shuffles",note: "Active recovery with resistance. Mimics court movement." },
+      { id: "p3", name: "Flutter kicks (hold wall)",       note: "Glute and hip flexor activation without load." },
+    ];
+
+    // ── STORAGE ──────────────────────────────────────────────────────────────
+    function useStore() {
+      const [data, setData] = useState(() => {
+        try { return JSON.parse(localStorage.getItem("pb_v2") || "{}"); } catch { return {}; }
+      });
+      useEffect(() => {
+        try { localStorage.setItem("pb_v2", JSON.stringify(data)); } catch {}
+      }, [data]);
+      const get = (k) => data[k] ?? "";
+      const getBool = (k) => !!data[k];
+      const set = (k, v) => setData(d => ({ ...d, [k]: v }));
+      const toggle = (k) => setData(d => ({ ...d, [k]: !d[k] }));
+      return { get, getBool, set, toggle };
+    }
+
+    // ── SHARED COMPONENTS ────────────────────────────────────────────────────
+    const TAG_COLORS = { glutes:"#c2d94e", legs:"#4ec2d9", power:"#e8a030", core:"#d94ec2", upper:"#4e8cd9", agility:"#d9c24e", grip:"#d94e7a" };
+
+    function Tag({ color, label }) {
+      const c = TAG_COLORS[color] || T.muted;
+      return <span style={{ background: c+"22", color: c, borderRadius:4, padding:"1px 7px", fontSize:10, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>{label}</span>;
+    }
+
+    function Checkbox({ checked, onToggle, size=24 }) {
+      return (
+        <button onClick={onToggle} style={{ width:size, height:size, borderRadius:size*0.25, border:`2px solid ${checked?T.green:T.muted}`, background:checked?T.green:"transparent", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}>
+          {checked && <span style={{ color:T.bg, fontSize:size*0.55, fontWeight:900, lineHeight:1 }}>✓</span>}
+        </button>
+      );
+    }
+
+    const inputSt = { background:"#1a2208", border:`1px solid ${T.border}`, borderRadius:6, color:T.accent, padding:"5px 10px", fontSize:13, outline:"none", fontFamily:"inherit" };
+
+    function SectionLabel({ emoji, label }) {
+      return <div style={{ color:T.green, fontWeight:700, fontSize:12, letterSpacing:2, textTransform:"uppercase", marginBottom:12 }}>{emoji} {label}</div>;
+    }
+
+    function SimpleCheck({ items, week, prefix, store }) {
+      return items.map((ex, i) => {
+        const k = `w${week}_${prefix}_${ex.id||i}`;
+        const done = store.getBool(k);
+        return (
+          <div key={i} style={{ background:done?T.done:T.card, border:`1px solid ${done?T.green:T.border}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
+            <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+              <Checkbox checked={done} onToggle={() => store.toggle(k)} size={20} />
+              <div>
+                <div style={{ color:done?T.muted:T.accent, fontWeight:700, fontSize:14, textDecoration:done?"line-through":"none" }}>{ex.name}</div>
+                <div style={{ color:T.muted, fontSize:12, marginTop:3, fontStyle:"italic" }}>{ex.note}</div>
+              </div>
+            </div>
+          </div>
+        );
+      });
+    }
+
+    // ── EXERCISE CARD ────────────────────────────────────────────────────────
+    function ExerciseCard({ ex, week, store }) {
+      const done = store.getBool(`w${week}_${ex.id}_done`);
+      return (
+        <div style={{ background:done?T.done:T.card, border:`1px solid ${done?T.doneBorder:T.border}`, borderRadius:12, padding:"14px 16px", marginBottom:10, transition:"all 0.2s" }}>
+          <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+            <Checkbox checked={done} onToggle={() => store.toggle(`w${week}_${ex.id}_done`)} />
+            <div style={{ flex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:6, marginBottom:4 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                  <span style={{ color:done?T.muted:T.accent, fontWeight:700, fontSize:15, textDecoration:done?"line-through":"none" }}>{ex.name}</span>
+                  {ex.tag && <Tag label={ex.tag} color={ex.tag} />}
+                </div>
+                {ex.sets && <span style={{ background:T.mid, color:T.green, borderRadius:6, padding:"2px 9px", fontSize:12, fontWeight:700, whiteSpace:"nowrap" }}>{ex.sets}</span>}
+              </div>
+              <div style={{ color:T.muted, fontSize:12, fontStyle:"italic", marginBottom:10, lineHeight:1.5 }}>{ex.note}</div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {ex.hasWeight && <input placeholder="Weight kg" value={store.get(`w${week}_${ex.id}_weight`)} onChange={e => store.set(`w${week}_${ex.id}_weight`, e.target.value)} style={{ ...inputSt, width:90 }} />}
+                {ex.hasTime   && <input placeholder="Time (sec)" value={store.get(`w${week}_${ex.id}_time`)}   onChange={e => store.set(`w${week}_${ex.id}_time`,   e.target.value)} style={{ ...inputSt, width:95 }} />}
+                <input placeholder="Notes…" value={store.get(`w${week}_${ex.id}_notes`)} onChange={e => store.set(`w${week}_${ex.id}_notes`, e.target.value)} style={{ ...inputSt, flex:1, minWidth:120 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── WARMUP ───────────────────────────────────────────────────────────────
+    function WarmupSection({ week, prefix, store }) {
+      return (
+        <div style={{ marginBottom:20 }}>
+          <SectionLabel emoji="🔥" label="Warm-Up (5 min)" />
+          {WARMUP_ITEMS.map((item, i) => {
+            const k = `w${week}_wu_${prefix}_${i}`;
+            const done = store.getBool(k);
+            return (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                <Checkbox checked={done} onToggle={() => store.toggle(k)} size={20} />
+                <span style={{ color:done?T.muted:"#d4e490", fontSize:13, textDecoration:done?"line-through":"none" }}>{item}</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // ── MOBILITY MENU ────────────────────────────────────────────────────────
+    function MobilityMenu({ week, prefix, store }) {
+      const [open, setOpen] = useState(false);
+      return (
+        <div style={{ background:T.mid, borderRadius:10, marginBottom:16, overflow:"hidden" }}>
+          <button onClick={() => setOpen(o => !o)} style={{ width:"100%", background:"transparent", border:"none", color:T.green, padding:"12px 16px", textAlign:"left", fontFamily:"inherit", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span>💆 Between-Set Mobility Menu (pick 1–2)</span>
+            <span style={{ fontSize:10 }}>{open?"▲":"▼"}</span>
+          </button>
+          {open && (
+            <div style={{ padding:"0 16px 14px" }}>
+              <div style={{ color:T.muted, fontSize:12, marginBottom:10 }}>Ankle</div>
+              {MOBILITY_MENU.ankle.map((item, i) => {
+                const k = `w${week}_mob_${prefix}_a${i}`; const done = store.getBool(k);
+                return <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6 }}><Checkbox checked={done} onToggle={() => store.toggle(k)} size={18} /><span style={{ color:done?T.muted:T.accent, fontSize:12, textDecoration:done?"line-through":"none" }}>{item}</span></div>;
+              })}
+              <div style={{ color:T.muted, fontSize:12, margin:"10px 0 8px" }}>Hip</div>
+              {MOBILITY_MENU.hip.map((item, i) => {
+                const k = `w${week}_mob_${prefix}_h${i}`; const done = store.getBool(k);
+                return <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6 }}><Checkbox checked={done} onToggle={() => store.toggle(k)} size={18} /><span style={{ color:done?T.muted:T.accent, fontSize:12, textDecoration:done?"line-through":"none" }}>{item}</span></div>;
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ── INCLINE WALK ─────────────────────────────────────────────────────────
+    function InclineWalk({ week, day, store }) {
+      const k = `w${week}_${day}_incline`; const done = store.getBool(k);
+      return (
+        <div style={{ background:done?T.done:"#1a1f08", border:`1px solid ${done?T.green:T.border}`, borderRadius:10, padding:"12px 14px", marginTop:16 }}>
+          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            <Checkbox checked={done} onToggle={() => store.toggle(k)} size={22} />
+            <div>
+              <div style={{ color:done?T.muted:T.accent, fontWeight:700, fontSize:14 }}>🚶 Incline Walk — 15 min</div>
+              <div style={{ color:T.muted, fontSize:12, marginTop:2 }}>Session finisher. Steady pace, moderate incline. Great for glutes and cardio without impact.</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── SWAP BANK ────────────────────────────────────────────────────────────
+    function SwapBank() {
+      return (
+        <div style={{ background:"#191f08", border:`1px dashed ${T.border}`, borderRadius:12, padding:16, marginTop:20 }}>
+          <div style={{ color:T.orange, fontWeight:700, fontSize:12, letterSpacing:2, textTransform:"uppercase", marginBottom:4 }}>🔄 Swap Bank — Month 4+</div>
+          <div style={{ color:T.muted, fontSize:12, marginBottom:14, fontStyle:"italic" }}>Stick with primary routine for 3 months first. These swap in when your body needs new stimulus.</div>
+          {DAY1_SWAPS.map((ex, i) => (
+            <div key={i} style={{ marginBottom:10 }}>
+              <div style={{ color:"#d4b870", fontWeight:700, fontSize:14 }}>{ex.name}</div>
+              <div style={{ color:T.muted, fontSize:12, fontStyle:"italic", marginTop:2 }}>{ex.note}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ── PROGRESSION TRACK ────────────────────────────────────────────────────
+    function ProgressionTrack({ week, store }) {
+      const puStage = store.get(`w${week}_prog_pushup_stage`);
+      const psStage = store.get(`w${week}_prog_pistol_stage`);
+      const stageCard = (s, active, onClick) => (
+        <div key={s.id} onClick={onClick} style={{ background:active?"#1e2d08":T.card, border:`2px solid ${active?T.green:T.border}`, borderRadius:10, padding:"12px 14px", marginBottom:8, cursor:"pointer", transition:"all 0.15s" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div><span style={{ color:T.muted, fontSize:11, fontWeight:700 }}>{s.label} · </span><span style={{ color:active?T.green:T.accent, fontWeight:700, fontSize:14 }}>{s.name}</span></div>
+            {active && <span style={{ color:T.green, fontSize:16 }}>●</span>}
+          </div>
+          <div style={{ color:T.muted, fontSize:12, marginTop:4, fontStyle:"italic" }}>{s.note}</div>
+        </div>
+      );
+      return (
+        <div style={{ paddingBottom:20 }}>
+          <div style={{ color:T.muted, fontSize:12, marginBottom:20, fontStyle:"italic", lineHeight:1.6 }}>Track your stage each week. These are long-game goals — consistency beats rushing.</div>
+          <SectionLabel emoji="💪" label="Push-Up Progression" />
+          <div style={{ color:T.muted, fontSize:12, marginBottom:12 }}>Currently at Stage 2. Negative push-ups (Stage 3) is your next move.</div>
+          {PUSHUP_STAGES.map(s => stageCard(s, puStage===s.id, () => store.set(`w${week}_prog_pushup_stage`, s.id)))}
+          <textarea placeholder="Notes on push-up work this week…" value={store.get(`w${week}_prog_pushup_notes`)} rows={2} onChange={e => store.set(`w${week}_prog_pushup_notes`, e.target.value)} style={{ ...inputSt, width:"100%", marginTop:8, lineHeight:1.5 }} />
+          <div style={{ marginTop:28 }}>
+            <SectionLabel emoji="🦵" label="Pistol Squat Progression" />
+            <div style={{ color:T.muted, fontSize:12, marginBottom:12 }}>Currently at Stage 2. Use stacked bumper plates to gradually lower the height.</div>
+            {PISTOL_STAGES.map(s => stageCard(s, psStage===s.id, () => store.set(`w${week}_prog_pistol_stage`, s.id)))}
+            <textarea placeholder="Notes on pistol squat work this week…" value={store.get(`w${week}_prog_pistol_notes`)} rows={2} onChange={e => store.set(`w${week}_prog_pistol_notes`, e.target.value)} style={{ ...inputSt, width:"100%", marginTop:8, lineHeight:1.5 }} />
+          </div>
+        </div>
+      );
+    }
+
+    // ── WEEKLY SUMMARY ───────────────────────────────────────────────────────
+    function WeeklySummary({ week, store }) {
+      const weightExs = [
+        { id:"d1_ht",  name:"Hip Thrust" }, { id:"d1_bss", name:"Bulgarian Split Squat" },
+        { id:"d1_lp",  name:"Leg Press" },  { id:"d2_lp",  name:"Lat Pulldown" },
+        { id:"d2_cp",  name:"Chest Press" },{ id:"d2_row", name:"Dumbbell Row" },
+        { id:"d2_rp",  name:"Rotational Press" },
+      ];
+      const plankExs = [{ id:"d1_plank", name:"Plank" }, { id:"d1_sp", name:"Side Plank" }];
+      const gw = (w, id) => parseFloat(store.get(`w${w}_${id}_weight`)) || 0;
+      const gt = (w, id) => parseFloat(store.get(`w${w}_${id}_time`)) || 0;
+      const arrow = (c, p) => {
+        if (!p && !c) return { sym:"—", col:T.muted };
+        if (!p) return { sym:"NEW", col:T.muted };
+        if (c > p) return { sym:"↑", col:T.green };
+        if (c < p) return { sym:"↓", col:T.red };
+        return { sym:"→", col:T.orange };
+      };
+      const tableStyle = { background:T.card, borderRadius:12, overflow:"hidden", marginBottom:20, border:`1px solid ${T.border}` };
+      const gridStyle = { display:"grid", gridTemplateColumns:"1fr 70px 70px 36px" };
+      const hdr = (t) => <div style={{ padding:"10px 12px", background:T.mid, color:T.muted, fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>{t}</div>;
+      const cell = (t, col, bold) => <div style={{ padding:"10px 12px", color:col||T.accent, fontSize:bold?16:13, fontWeight:bold?900:400, borderTop:`1px solid ${T.border}` }}>{t}</div>;
+      return (
+        <div style={{ paddingBottom:20 }}>
+          <div style={{ color:T.muted, fontSize:12, marginBottom:20, fontStyle:"italic" }}>Auto-populated from your logged weights. Add your wins and reflections below.</div>
+          <SectionLabel emoji="📊" label="Weight Progression" />
+          <div style={tableStyle}><div style={gridStyle}>{["Exercise","This week","Last week",""].map((h,i)=><React.Fragment key={i}>{hdr(h)}</React.Fragment>)}
+            {weightExs.map((ex,i)=>{ const c=gw(week,ex.id), p=week>0?gw(week-1,ex.id):0, {sym,col}=arrow(c,p); return <React.Fragment key={i}>{cell(ex.name)}{cell(c?`${c}kg`:"—",T.green,false)}{cell(p?`${p}kg`:"—",T.muted,false)}{cell(sym,col,true)}</React.Fragment>; })}
+          </div></div>
+          <SectionLabel emoji="⏱" label="Plank Time" />
+          <div style={tableStyle}><div style={gridStyle}>{["Exercise","This week","Last week",""].map((h,i)=><React.Fragment key={i}>{hdr(h)}</React.Fragment>)}
+            {plankExs.map((ex,i)=>{ const c=gt(week,ex.id), p=week>0?gt(week-1,ex.id):0, {sym,col}=arrow(c,p); return <React.Fragment key={i}>{cell(ex.name)}{cell(c?`${c}s`:"—",T.green,false)}{cell(p?`${p}s`:"—",T.muted,false)}{cell(sym,col,true)}</React.Fragment>; })}
+          </div></div>
+          <SectionLabel emoji="🏅" label="Weekly Reflection" />
+          {[
+            { key:"wins",    label:"⭐ Wins this week",                    ph:"What went well? PR? Felt strong? Made it to all sessions?" },
+            { key:"energy",  label:"⚡ Energy & recovery",                 ph:"How was your energy, sleep, soreness this week?" },
+            { key:"pickle",  label:"🏓 Pickleball — what improved?",       ph:"Faster? More power? Better recovery between points?" },
+            { key:"reflect", label:"📝 Anything to adjust next week?",     ph:"Notes for next week…" },
+          ].map(f => (
+            <div key={f.key} style={{ marginBottom:12 }}>
+              <div style={{ color:T.muted, fontSize:12, marginBottom:6 }}>{f.label}</div>
+              <textarea placeholder={f.ph} value={store.get(`w${week}_sum_${f.key}`)} rows={2} onChange={e => store.set(`w${week}_sum_${f.key}`, e.target.value)} style={{ ...inputSt, width:"100%", lineHeight:1.5 }} />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ── DAY 3 RECOVERY ───────────────────────────────────────────────────────
+    function Day3Recovery({ week, store }) {
+      return (
+        <div>
+          <div style={{ color:T.muted, fontSize:12, marginBottom:16, fontStyle:"italic" }}>~30 min on any rest day. Tight hamstrings won't fix themselves — prioritise this.</div>
+          <SectionLabel emoji="🔵" label="Foam Roller (10 min)" />
+          <SimpleCheck items={FOAM_ROLLER} week={week} prefix="fr" store={store} />
+          <div style={{ marginTop:20 }}><SectionLabel emoji="⚫" label="Small Ball Release (10 min)" /></div>
+          <SimpleCheck items={SMALL_BALL} week={week} prefix="sb" store={store} />
+          <div style={{ marginTop:20 }}><SectionLabel emoji="🧘" label="Mobility Flow (10 min)" /></div>
+          <SimpleCheck items={MOBILITY_FLOW} week={week} prefix="mf" store={store} />
+          <div style={{ marginTop:20, background:T.mid, borderRadius:12, padding:16 }}>
+            <div style={{ color:T.green, fontWeight:700, fontSize:13, marginBottom:8 }}>📱 My Mobility Videos</div>
+            <textarea placeholder="Jot your bookmarked videos or links here…" value={store.get(`w${week}_d3_yt`)} rows={3} onChange={e => store.set(`w${week}_d3_yt`, e.target.value)} style={{ ...inputSt, width:"100%", lineHeight:1.5 }} />
+          </div>
+        </div>
+      );
+    }
+
+    // ── POOL TAB ─────────────────────────────────────────────────────────────
+    function PoolTab({ week, store }) {
+      return (
+        <div>
+          <div style={{ color:T.muted, fontSize:12, marginBottom:16, fontStyle:"italic" }}>Any rest day or post-strength. 20–30 min is enough.</div>
+          <SectionLabel emoji="🏊" label="Pool Options" />
+          {POOL_OPTIONS.map(ex => {
+            const k=`w${week}_pool_${ex.id}`, nk=`w${week}_pool_${ex.id}_notes`, done=store.getBool(k);
+            return (
+              <div key={ex.id} style={{ background:done?T.done:T.card, border:`1px solid ${done?T.green:T.border}`, borderRadius:10, padding:"12px 14px", marginBottom:10 }}>
+                <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                  <Checkbox checked={done} onToggle={() => store.toggle(k)} size={22} />
+                  <div style={{ flex:1 }}>
+                    <div style={{ color:done?T.muted:T.accent, fontWeight:700, fontSize:14 }}>{ex.name}</div>
+                    <div style={{ color:T.muted, fontSize:12, marginTop:3, fontStyle:"italic" }}>{ex.note}</div>
+                    <input placeholder="Notes…" value={store.get(nk)} onChange={e => store.set(nk, e.target.value)} style={{ ...inputSt, width:"100%", marginTop:10 }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ background:"#1a2208", border:`1px solid ${T.border}`, borderRadius:12, padding:14, marginTop:8 }}>
+            <div style={{ color:T.green, fontWeight:700, fontSize:13, marginBottom:6 }}>💡 Perimenopause note</div>
+            <div style={{ color:"#c8d890", fontSize:13, lineHeight:1.6 }}>Swimming supports cardiovascular health and mood regulation. A 20-min pool session on low-energy days beats skipping entirely.</div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── MAIN APP ─────────────────────────────────────────────────────────────
+    function App() {
+      const store = useStore();
+      const [week, setWeek] = useState(0);
+      const [tab, setTab]   = useState("day1");
+
+      const weekPct = (w) => {
+        const all = [...DAY1_PRIMARY, ...DAY2_PRIMARY];
+        return Math.round(all.filter(e => store.getBool(`w${w}_${e.id}_done`)).length / all.length * 100);
+      };
+
+      const TABS = [
+        { id:"day1", label:"Day 1", sub:"Lower+Glutes" },
+        { id:"day2", label:"Day 2", sub:"Upper+Agility" },
+        { id:"day3", label:"Day 3", sub:"Recovery" },
+        { id:"pool", label:"Pool",  sub:"Active Rest" },
+        { id:"prog", label:"Goals", sub:"Progressions" },
+        { id:"sum",  label:"Summary",sub:"Review" },
+      ];
+      const pct = weekPct(week);
+
+      return (
+        <div style={{ minHeight:"100vh", background:T.bg, color:T.accent, fontFamily:"'DM Sans', sans-serif", paddingBottom:60 }}>
+          {/* Header */}
+          <div style={{ background:`linear-gradient(135deg,#1e2a08 0%,${T.bg} 100%)`, padding:"24px 20px 18px", borderBottom:`1px solid ${T.border}` }}>
+            <div style={{ maxWidth:620, margin:"0 auto" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:2 }}>
+                <span style={{ fontSize:26 }}>🏓</span>
+                <span style={{ fontFamily:"'Syne', sans-serif", fontSize:20, fontWeight:800, color:T.accent, letterSpacing:-0.5 }}>Pickleball Power Plan</span>
+              </div>
+              <div style={{ color:T.muted, fontSize:12, marginLeft:36 }}>8-week tracker · Power, glutes & agility · Perimenopause-smart</div>
+            </div>
+          </div>
+
+          <div style={{ maxWidth:620, margin:"0 auto", padding:"0 16px" }}>
+            {/* Week selector */}
+            <div style={{ marginTop:18, marginBottom:14 }}>
+              <div style={{ color:T.muted, fontSize:11, fontWeight:700, letterSpacing:2, textTransform:"uppercase", marginBottom:10 }}>Select Week</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {WEEKS.map((w, i) => {
+                  const p = weekPct(i);
+                  return (
+                    <button key={i} onClick={() => setWeek(i)} style={{ background:week===i?T.green:T.mid, color:week===i?T.bg:T.muted, border:`1px solid ${week===i?T.green:T.border}`, borderRadius:8, padding:"6px 14px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", position:"relative" }}>
+                      {w}
+                      {p > 0 && <span style={{ position:"absolute", top:-7, right:-7, background:p===100?T.green:T.orange, color:T.bg, borderRadius:10, fontSize:9, fontWeight:900, padding:"1px 5px" }}>{p}%</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ background:T.mid, borderRadius:8, height:5, marginBottom:18 }}>
+              <div style={{ background:T.green, height:"100%", width:`${pct}%`, borderRadius:8, transition:"width 0.4s" }} />
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:4, background:T.mid, borderRadius:12, padding:4, marginBottom:20 }}>
+              {TABS.map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} style={{ background:tab===t.id?T.green:"transparent", color:tab===t.id?T.bg:T.muted, border:"none", borderRadius:8, padding:"8px 2px", cursor:"pointer", fontFamily:"inherit", lineHeight:1.2, transition:"all 0.15s" }}>
+                  <div style={{ fontSize:11, fontWeight:800 }}>{t.label}</div>
+                  <div style={{ fontSize:9, opacity:0.8, marginTop:1 }}>{t.sub}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            {tab === "day1" && (
+              <div>
+                <div style={{ color:T.muted, fontSize:12, marginBottom:16, fontStyle:"italic" }}>Lower body power + glute activation + core · ~55 min</div>
+                <WarmupSection week={week} prefix="d1" store={store} />
+                <MobilityMenu  week={week} prefix="d1" store={store} />
+                <SectionLabel emoji="💪" label="Primary Routine — Months 1–3" />
+                {DAY1_PRIMARY.map(ex => <ExerciseCard key={ex.id} ex={ex} week={week} store={store} />)}
+                <SwapBank />
+                <InclineWalk week={week} day="d1" store={store} />
+              </div>
+            )}
+            {tab === "day2" && (
+              <div>
+                <div style={{ color:T.muted, fontSize:12, marginBottom:16, fontStyle:"italic" }}>Upper body strength + agility + push-up progression · ~55 min</div>
+                <WarmupSection week={week} prefix="d2" store={store} />
+                <MobilityMenu  week={week} prefix="d2" store={store} />
+                <SectionLabel emoji="🎯" label="Primary Routine — Months 1–3" />
+                {DAY2_PRIMARY.map(ex => <ExerciseCard key={ex.id} ex={ex} week={week} store={store} />)}
+                <InclineWalk week={week} day="d2" store={store} />
+              </div>
+            )}
+            {tab === "day3"  && <Day3Recovery week={week} store={store} />}
+            {tab === "pool"  && <PoolTab      week={week} store={store} />}
+            {tab === "prog"  && <ProgressionTrack week={week} store={store} />}
+            {tab === "sum"   && <WeeklySummary    week={week} store={store} />}
+
+            <div style={{ textAlign:"center", color:"#3a4a20", fontSize:11, marginTop:32 }}>
+              Saves in your browser · Built for your pickleball journey 🏓
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
